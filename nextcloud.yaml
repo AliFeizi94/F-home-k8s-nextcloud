@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nextcloud-deployment
+  labels:
+    app: nextcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nextcloud
+  template:
+    metadata:
+      labels:
+        app: nextcloud
+    spec:
+      containers:
+      - name: nextcloud
+        image: nextcloud:24.0.1
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: nextcloud-config-map
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: nextcloud-password
+        - name: NEXTCLOUD_ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: nextcloud-secrets
+              key: admin-username
+        - name: NEXTCLOUD_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nextcloud-secrets
+              key: admin-password
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-config-map
+data:
+  POSTGRES_HOST: postgres-cluster-ip-service
+  POSTGRES_DB: nextcloud
+  POSTGRES_USER: nextcloud
+  REDIS_HOST: redis-cluster-ip-service
+  REDIS_HOST_PORT: '6379'
